@@ -1,0 +1,855 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fluxionary Support</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --error: #ef4444;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --sidebar-width: 300px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        body { background-color: var(--bg); color: var(--text-main); line-height: 1.6; overflow-x: hidden; }
+
+        /* Utility Classes */
+        .hidden { display: none !important; }
+        .btn { cursor: pointer; padding: 12px 24px; border-radius: 8px; border: none; font-weight: 600; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+        .btn-primary { background: var(--primary); color: white; width: 100%; }
+        .btn-primary:hover { background: var(--primary-hover); transform: translateY(-2px); box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2); }
+        .btn-google { background: #fff; color: #475569; border: 1px solid #cbd5e1; width: 100%; margin-top: 10px; }
+        .btn-google:hover { background: #f8fafc; }
+        .btn:active { transform: scale(0.95); }
+        .btn:disabled { background: #cbd5e1; cursor: not-allowed; }
+
+        @media (max-width: 768px) {
+            :root { --sidebar-width: 250px; }
+            nav { padding: 1rem 3%; }
+            .dashboard { padding: 0 15px; margin: 20px auto; }
+            .auth-container { margin: 40px 15px; padding: 25px; }
+        }
+
+        /* Navigation */
+        nav { background: white; padding: 1rem 5%; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.05); position: sticky; top: 0; z-index: 100; }
+        .logo { font-size: 1.5rem; font-weight: 800; color: var(--primary); letter-spacing: -1px; cursor: pointer; display: flex; align-items: center; gap: 10px; }
+        .hamburger-menu { font-size: 1.25rem; color: var(--text-main); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; padding: 8px; border-radius: 6px; transition: background 0.2s; }
+        .hamburger-menu:hover { background: #f1f5f9; }
+
+        /* Sidebar/Drawers (Modified position from right to left) */
+        .sidebar { position: fixed; left: calc(-1 * var(--sidebar-width)); top: 0; width: var(--sidebar-width); height: 100%; background: white; box-shadow: 5px 0 25px rgba(0,0,0,0.1); z-index: 1001; transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1); padding: 30px 20px; overflow-y: auto; }
+        .sidebar.active { left: 0; }
+        
+        /* Drawer Specifically for Mandatory Profile (Left Aligned for Distinguishing) */
+        .profile-drawer { position: fixed; left: -100%; top: 0; width: 100%; max-width: 450px; height: 100%; background: white; box-shadow: 5px 0 25px rgba(0,0,0,0.1); z-index: 2000; transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1); padding: 40px 30px; overflow-y: auto; }
+        .profile-drawer.active { left: 0; }
+
+        .drawer-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); opacity: 0; visibility: hidden; transition: 0.3s; z-index: 1000; backdrop-filter: blur(2px); }
+        .drawer-overlay.active { opacity: 1; visibility: visible; }
+
+        /* Auth Container */
+        .auth-container { max-width: 420px; margin: 60px auto; padding: 40px; background: white; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); }
+        .input-group { margin-bottom: 20px; }
+        .input-group label { display: block; margin-bottom: 8px; font-weight: 500; color: var(--text-muted); font-size: 0.9rem; }
+        input, textarea, select { width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; outline: none; transition: 0.2s; background: #fff; color: var(--text-main); }
+        input:focus, textarea:focus, select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); }
+        
+        .experimental-warning { background-color: #fffbeb; border: 1px solid #fef3c7; color: #b45309; padding: 12px; border-radius: 8px; font-size: 0.8rem; margin-bottom: 15px; display: flex; gap: 8px; align-items: flex-start; }
+
+        /* Dashboard */
+        .dashboard { max-width: 1000px; margin: 40px auto; padding: 0 20px; }
+        .complaint-card { background: white; padding: 25px; border-radius: 12px; margin-bottom: 20px; border-left: 5px solid var(--primary); box-shadow: 0 4px 6px rgba(0,0,0,0.02); transition: all 0.3s ease; position: relative; }
+        .complaint-card:hover { transform: translateX(4px); box-shadow: 0 10px 20px rgba(0,0,0,0.05); }
+        
+        .ticket-meta { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-size: 0.85rem; }
+        .ticket-timestamp { font-size: 0.75rem; color: var(--text-muted); position: absolute; top: 15px; right: 15px; }
+
+        /* Badges */
+        .status-badge { font-size: 0.75rem; padding: 4px 10px; border-radius: 20px; font-weight: 600; text-transform: uppercase; }
+        .status-pending { background: #fef3c7; color: #92400e; }
+        .status-seen { background: #e0f2fe; color: #0369a1; }
+        
+        .priority-badge { font-size: 0.7rem; padding: 2px 8px; border-radius: 4px; font-weight: bold; color: white; margin-left: 8px;}
+        .p-high { background: var(--error); }
+        .p-medium { background: var(--warning); }
+        .p-low { background: #94a3b8; }
+
+        .staff-reply { margin-top: 15px; padding: 15px; background: #f1f5f9; border-radius: 8px; border-left: 3px solid var(--success); position: relative; }
+        .automated-badge { background: #e0f2fe; color: #0369a1; font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; margin-left: 6px; font-weight: bold; text-transform: uppercase; }
+
+        /* Profile Pic Layout */
+        .pfp-container { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-bottom: 20px; }
+        .pfp-preview { width: 100px; height: 100px; border-radius: 50%; object-fit: cover; background: #e2e8f0; border: 2px solid var(--primary); }
+
+        /* Toasts */
+        #toast-container { position: fixed; bottom: 30px; right: 30px; z-index: 9999; }
+        .toast { background: white; color: var(--text-main); padding: 16px 24px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); margin-top: 10px; display: flex; align-items: center; gap: 12px; min-width: 300px; border-left: 4px solid var(--primary); animation: slideIn 0.3s ease-out forwards; }
+        .toast.success { border-color: var(--success); }
+        .toast.error { border-color: var(--error); }
+
+        /* Actions Container */
+        .ticket-actions { margin-top: 12px; display: flex; gap: 10px; border-top: 1px dashed #e2e8f0; padding-top: 12px; }
+        .btn-action { padding: 6px 12px; font-size: 0.8rem; border-radius: 4px; background: #f1f5f9; color: var(--text-main); font-weight: 500; display: inline-flex; align-items: center; gap: 4px; border: none; cursor: pointer; }
+        .btn-action-delete { background: #fee2e2; color: #b91c1c; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        .fade-in { animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+    </style>
+</head>
+<body>
+
+    <div id="toast-container"></div>
+    <div class="drawer-overlay" id="drawer-overlay" onclick="closeAllDrawers()"></div>
+
+    <div class="sidebar" id="profile-settings-sidebar">
+        <h2 style="margin-bottom: 20px;"><i class="fas fa-cog"></i> Profile Settings</h2>
+        <hr style="opacity: 0.1; margin-bottom: 20px;">
+        <div class="pfp-container">
+            <img id="settings-pfp-view" class="pfp-preview" src="" alt="Pfp">
+            <input type="file" id="settings-pfp-input" accept="image/*" style="display:none;">
+            <button class="btn" style="padding: 6px 12px; font-size: 0.8rem; background: #e2e8f0;" onclick="document.getElementById('settings-pfp-input').click()">Change Picture</button>
+        </div>
+        <div class="input-group">
+            <label>Display Name</label>
+            <input type="text" id="settings-display-name">
+        </div>
+        
+        <button class="btn" style="background: #fee2e2; color: #b91c1c; width: 100%; margin-bottom: 20px;" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
+
+        <div class="input-group">
+            <label>Description</label>
+            <textarea id="settings-description" rows="3"></textarea>
+        </div>
+        <div class="input-group">
+            <label>Birth Year</label>
+            <input type="number" id="settings-birth-year">
+        </div>
+        <button class="btn btn-primary" onclick="saveProfileData(true)">Save Updates</button>
+    </div>
+
+    <div class="profile-drawer" id="mandatory-profile-drawer">
+        <h2 style="margin-bottom: 10px;"><i class="fas fa-user-edit"></i> Complete your profile</h2>
+        <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 20px;">Please provide your basic details before exploring the dashboard.</p>
+        <hr style="opacity: 0.1; margin-bottom: 20px;">
+        
+        <div class="pfp-container">
+            <img id="mandatory-pfp-view" class="pfp-preview" src="https://www.w3schools.com/howto/img_avatar.png" alt="Pfp">
+            <input type="file" id="mandatory-pfp-input" accept="image/*" style="display:none;">
+            <button class="btn" style="padding: 6px 12px; font-size: 0.8rem; background: #e2e8f0;" onclick="document.getElementById('mandatory-pfp-input').click()">Choose Profile Picture</button>
+            <span style="font-size:0.75rem; color: var(--text-muted);">Max size: 5MB</span>
+        </div>
+        <div class="input-group">
+            <label>Display Name</label>
+            <input type="text" id="mandatory-display-name" placeholder="John Doe">
+        </div>
+        <div class="input-group">
+            <label>Description</label>
+            <textarea id="mandatory-description" rows="3" placeholder="Tell us a bit about yourself..."></textarea>
+        </div>
+        <div class="input-group">
+            <label>Birth Year</label>
+            <input type="number" id="mandatory-birth-year" placeholder="1998">
+        </div>
+        <button class="btn btn-primary" id="mandatory-save-btn" onclick="saveProfileData(false)">Save & Continue</button>
+    </div>
+
+    <div id="kids-restriction-screen" class="auth-container hidden fade-in" style="max-width: 500px; text-align: center;">
+        <i class="fas fa-child" style="font-size: 4rem; color: var(--error); margin-bottom: 20px;"></i>
+        <h2>App not for kids under the age of 7</h2>
+        <p style="color: var(--text-muted); margin-top: 10px; margin-bottom: 25px;">For compliance and safety parameters, you must be 7 years or older to proceed with Fluxionary Support.</p>
+        <button class="btn btn-primary" style="background: var(--error);" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
+    </div>
+
+    <nav>
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <div class="hamburger-menu" onclick="openSettingsSidebar()"><i class="fas fa-bars"></i></div>
+            <div class="logo" onclick="openSettingsSidebar()"><i class="fas fa-headset"></i> Fluxionary Support</div>
+        </div>
+        <div id="nav-user" class="hidden" style="display: flex; align-items: center; gap: 15px;">
+            <span id="top-user-name" style="font-weight: 600;" onclick="openSettingsSidebar()"></span>
+            <button class="btn" style="background: #f1f5f9; padding: 8px 16px;" onclick="openSettingsSidebar()"><i class="fas fa-user-cog"></i> Profile Settings</button>
+        </div>
+    </nav>
+
+    <div id="auth-section" class="auth-container fade-in">
+        <h2 id="auth-title" style="margin-bottom: 5px; text-align: center;">Welcome Back</h2>
+        <p id="auth-subtitle" style="text-align: center; color: var(--text-muted); font-size: 0.9rem; margin-bottom: 25px;">Fluxionary Support Gateway</p>
+        
+        <div class="input-group">
+            <label>Email Address</label>
+            <input type="email" id="email" placeholder="name@domain.com">
+        </div>
+        <div class="input-group">
+            <label>Password</label>
+            <input type="password" id="password" placeholder="••••••••">
+        </div>
+        
+        <button id="auth-btn" class="btn btn-primary" onclick="handleAuth()">Sign In</button>
+        
+        <div class="experimental-warning">
+            <i class="fas fa-exclamation-triangle" style="margin-top:2px;"></i>
+            <span>Email and password login or signup are highly experimental. Use Google Authentication if you need stability and speed.</span>
+        </div>
+
+        <button class="btn btn-google" onclick="handleGoogleAuth()">
+            <img src="https://fonts.gstatic.com/s/i/productlogos/googleg/v6/24px.svg" alt="G" style="width:18px;"> Continue with Google
+        </button>
+
+        <p style="text-align: center; margin-top: 25px; color: var(--text-muted); font-size:0.9rem;">
+            <span id="auth-toggle-text">New to the app, what are you waiting for?</span> 
+            <a href="#" id="auth-toggle-link" onclick="toggleAuthMode()" style="color: var(--primary); text-decoration: none; font-weight: 600; display:block; margin-top:5px;">Signup now!</a>
+        </p>
+    </div>
+
+    <div id="user-dashboard" class="dashboard hidden">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+            <h1>My Complaints</h1>
+            <button class="btn btn-primary" style="width: auto;" onclick="toggleComplaintForm()">
+                <i class="fas fa-plus"></i> Send Complaint Ticket
+            </button>
+        </div>
+
+        <div id="complaint-form" class="complaint-card hidden fade-in">
+            <h3 id="form-action-title" style="margin-bottom: 20px;">Submit Support Request</h3>
+            <input type="hidden" id="edit-ticket-id" value="">
+            
+            <div class="input-group">
+                <label>Platform Target</label>
+                <select id="comp-platform">
+                    <option value="Synchronous platform">Synchronous platform</option>
+                    <option value="Fluxionary Page">Fluxionary Page</option>
+                    <option value="Fluxionary support app">Fluxionary support app</option>
+                </select>
+            </div>
+
+            <div class="input-group">
+                <label>Priority Level</label>
+                <select id="comp-priority">
+                    <option value="low">Low</option>
+                    <option value="medium">Medium</option>
+                    <option value="high">High</option>
+                </select>
+            </div>
+
+            <div class="input-group">
+                <label>Topic</label>
+                <input type="text" id="comp-topic" placeholder="Summary topic of your request">
+            </div>
+
+            <div class="input-group">
+                <label>Main Bug Description</label>
+                <textarea id="comp-message" rows="4" placeholder="Detail the technical parameters or errors encountered..."></textarea>
+            </div>
+
+            <div class="input-group" id="evidence-input-wrapper">
+                <label>Evidence Media File (Video, Photo, or PDF - Max 70MB, Limit 1)</label>
+                <input type="file" id="comp-media" accept="image/*,video/*,application/pdf">
+                <div id="upload-progress-label" style="font-size:0.8rem; color: var(--primary); margin-top:5px;" class="hidden">Uploading evidence to secure storage...</div>
+            </div>
+
+            <div style="display:flex; gap:10px; margin-top:10px;">
+                <button class="btn btn-primary" id="ticket-submit-btn" onclick="submitComplaint()">Send Ticket</button>
+                <button class="btn" style="background:#e2e8f0" onclick="toggleComplaintForm()">Cancel</button>
+            </div>
+        </div>
+
+        <div id="complaints-list"></div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getDatabase, ref, set, push, onValue, update, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+        // Explicit structural configuration targets
+        const firebaseConfig = {
+          apiKey: "AIzaSyB2tIzbMCcO5lvQzLJQV-TQypWBO6Kll-A",
+          authDomain: "supportserverfluxionary.firebaseapp.com",
+          databaseURL: "https://supportserverfluxionary-default-rtdb.asia-southeast1.firebasedatabase.app",
+          projectId: "supportserverfluxionary",
+          storageBucket: "supportserverfluxionary.firebasestorage.app",
+          messagingSenderId: "284877105157",
+          appId: "1:284877105157:web:2c451ceabdd1a8d881546c"
+        };
+
+        const cloudinaryConfig = {
+            cloudName: "dgdaqwfib",
+            uploadPreset: "ml_default"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getDatabase(app);
+        const googleProvider = new GoogleAuthProvider();
+
+        let isLoginMode = true;
+        let currentUserProfile = null;
+        let mandatoryUploadedPfpUrl = "https://www.w3schools.com/howto/img_avatar.png";
+        let settingsUploadedPfpUrl = "";
+
+        // 100+ Extensive Profanity Filter Database array parameters initialization 
+        const profanityList = [
+            "abuse", "asshole", "bitch", "bastard", "bloody", "bullshit", "crap", "cunt", "dick", "fucker", "fucking", "idiot", "moron", "retard", "scum", "slut", "whore", "piss", "twat", "wank",
+            "wanker", "prick", "cock", "pussy", "motherfucker", "dipshit", "dumbass", "jackass", "shit", "shitting", "shitty", "bollocks", "bugger", "choad", "clit", "coom", "coon", "damn", "dyke", "fag",
+            "faggot", "feck", "goddamn", "hoe", "jerkoff", "kike", "muff", "nigga", "nigger", "nonce", "pecker", "pissed", "poon", "queer", "scrotum", "shag", "skank", "smegma", "spestic", "tits",
+            "tosser", "twatface", "twatlips", "arse", "arsehole", "biatch", "blowjob", "bollok", "boner", "breasts", "buget", "butt", "carpetmuncher", "clitoris", "cockfucker", "cocksuck", "cocksucker", "coon",
+            "cum", "ejaculate", "ejaculation", "fany", "flange", "fudgepacker", "horny", "knob", "knobhead", "labia", "lmao", "lmfao", "moolie", "omg", "orgasm", "penis", "pissedflaps", "rimjob", "slutty", "spunk",
+            "testicle", "tit", "vagina", "viagra", "vulva", "xxx", "b1tch", "f0ck", "f_u_c_k", "phuck", "sh!t"
+        ];
+
+        // 10 Standard Auto Responses for Tickets > 20 Hours Pending
+        const delayResponses = [
+            "Request noted",
+            "The glitch will be fixed, thanks for informing",
+            "Our technical operations unit has cataloged this record, analysis is underway.",
+            "Thank you for your patience, we are tracking this structural glitch at the moment.",
+            "We have captured your request parameter data and are escalating this internally.",
+            "The diagnostic review is pending execution; thank you for bringing this to light.",
+            "Your ticket is prioritized in our fallback processing queue. Updates will follow.",
+            "Fluxionary operations acknowledge this bug log. Further investigation is active.",
+            "We are evaluating your system environment values to resolve this interface deviation.",
+            "Verification of this ticket payload data is ongoing. Thanks for waiting."
+        ];
+
+        // 20 Distinct Auto Warning Responses for Profanity Violation Event Hooks
+        const profanityResponses = [
+            "Dear valued user, please note that using profanities towards staff can get you banned temporarily if you keep doing this. Thanks, Fluxionary Team",
+            "Dear valued user, utilizing aggressive profanities or harmful terms targeting Fluxionary staff may induce a temporary suspension of authentication privileges.",
+            "Notice: Fluxionary systems require professional conversational parameters. Continued profanity logs will result in standard operational account exclusion tags.",
+            "Warning: Explicit language was detected in your communication layout. Maintain respectful inputs to prevent automatic programmatic temporary bans.",
+            "Attention user, our support policies completely forbid profanity streams. Adhere to our guidelines to prevent temporal session termination actions.",
+            "Dear valued user, professional workspace interactions are mandatory here. Profanities targeting staff run the immediate risk of security restrictions.",
+            "Notice: Flagged profanity index matched in your description payload. Continued abusive inputs will activate automated profile ban configurations.",
+            "Fluxionary Helpdesk Statement: We maintain zero tolerance for profanity metrics. Please revise your communication structure to avoid account holds.",
+            "Dear customer, support agents operate within safe perimeters. Abusive or profane descriptions trigger immediate temporal suspension reviews.",
+            "System Broadcast: Offensive vocabulary profile matched. Please remember that using profanities towards staff can get you banned temporarily if you keep doing this.",
+            "Notice: Automated word filters detected inappropriate textual strings. Please retain a helpful tone to avoid account compliance blocks.",
+            "Dear valued user, safeguard your account stability by omitting offensive terminology. Continued breaches mandate immediate service limitation steps.",
+            "Alert: Abusive content signatures identified. Using profane metrics or target flags against Fluxionary teams can lead to account freezes.",
+            "Warning: Please minimize explicit terminology. Our systems record profane tickets to process disciplinary profile exclusion states automatically.",
+            "Dear user, compliance filters caught prohibited words in your submission. Maintain professional descriptions to avoid a system restriction.",
+            "System Flag: Abusive string configurations discovered. Continued submission of vulgar parameters will generate a temporary authentication block.",
+            "Dear valued user, please recognize that explicit communication targeting our teams will invoke standard temporary account ban timelines.",
+            "Notice: Fluxionary support logs are regulated. Abusive descriptors trigger automatic ticket rejection protocols alongside profile validation holds.",
+            "Attention: Refrain from executing profane strings inside support requests. Failure to comply directly initiates temporal session suspension runs.",
+            "Dear valued user, ensure no profanities are directed towards Fluxionary staff, as persistent toxic interaction sets account bans active."
+        ];
+
+        // Profanity Parsing and Censorship Engine Logic
+        function parseAndFilterProfanity(text) {
+            let found = false;
+            let filteredText = text;
+
+            profanityList.forEach(word => {
+                const regex = new RegExp(`\\b${word}\\b`, 'gi');
+                if (regex.test(filteredText)) {
+                    found = true;
+                    filteredText = filteredText.replace(regex, (match) => {
+                        if (match.length <= 2) return "*".repeat(match.length);
+                        const start = match[0];
+                        const end = match[match.length - 1];
+                        const middle = "*".repeat(match.length - 2);
+                        return start + middle + end;
+                    });
+                }
+            });
+
+            return { found, filteredText };
+        }
+
+        // Automated Processing Cycle for > 20 Hours Lag Checks
+        function evaluateTicketLagUpdates(ticketId, ticketData) {
+            if (ticketData.status !== 'Unseen' || ticketData.staffReply) return;
+            
+            // Parse custom system localized timestamp strings manually or via Date context conversions
+            const ticketTime = new Date(ticketData.timestamp);
+            if (isNaN(ticketTime.getTime())) return;
+
+            const finalDiffHours = (new Date() - ticketTime) / (1000 * 60 * 60);
+
+            if (finalDiffHours >= 20) {
+                const randomReply = delayResponses[Math.floor(Math.random() * delayResponses.length)];
+                update(ref(db, `complaints/${ticketId}`), {
+                    staffReply: randomReply,
+                    replyTimestamp: new Date().toLocaleString(),
+                    status: 'Seen',
+                    isAutomated: true
+                });
+            }
+        }
+
+        // UI Toast Operations Engine
+        window.showToast = (msg, type = 'success') => {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            const icon = type === 'success' ? 'fa-check-circle' : 'fa-exclamation-triangle';
+            toast.innerHTML = `<i class="fas ${icon}" style="color: var(--${type})"></i> <span>${msg}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 4000);
+        };
+
+        window.closeAllDrawers = () => {
+            document.getElementById('profile-settings-sidebar').classList.remove('active');
+            document.getElementById('mandatory-profile-drawer').classList.remove('active');
+            document.getElementById('drawer-overlay').classList.remove('active');
+        };
+
+        window.openSettingsSidebar = () => {
+            // AUTHENTICATION GUARD FIX: Ensure sidebar cannot open when user session is unauthorized or empty
+            if (!auth.currentUser) {
+                return;
+            }
+
+            // Check if profile exists; if not, populate default values for onboarding fallback view state
+            const targetDisplayName = currentUserProfile ? (currentUserProfile.displayName || '') : '';
+            const targetDescription = currentUserProfile ? (currentUserProfile.description || '') : '';
+            const targetBirthYear = currentUserProfile ? (currentUserProfile.birthYear || '') : '';
+            const targetPic = currentUserProfile ? (currentUserProfile.profilePic || 'https://www.w3schools.com/howto/img_avatar.png') : 'https://www.w3schools.com/howto/img_avatar.png';
+
+            document.getElementById('settings-display-name').value = targetDisplayName;
+            document.getElementById('settings-description').value = targetDescription;
+            document.getElementById('settings-birth-year').value = targetBirthYear;
+            document.getElementById('settings-pfp-view').src = targetPic;
+            settingsUploadedPfpUrl = currentUserProfile ? (currentUserProfile.profilePic || '') : '';
+            
+            document.getElementById('profile-settings-sidebar').classList.add('active');
+            document.getElementById('drawer-overlay').classList.add('active');
+        };
+
+        // Localized image file upload parsing handlers
+        document.getElementById('mandatory-pfp-input').addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            if (file.size > 5 * 1024 * 1024) {
+                showToast("Profile image must be less than 5MB", "error");
+                return;
+            }
+            const url = await uploadToCloudinary(file);
+            if (url) {
+                mandatoryUploadedPfpUrl = url;
+                document.getElementById('mandatory-pfp-view').src = url;
+                showToast("Profile image loaded successfully");
+            }
+        });
+
+        document.getElementById('settings-pfp-input').addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            if (file.size > 5 * 1024 * 1024) {
+                showToast("Profile image must be less than 5MB", "error");
+                return;
+            }
+            const url = await uploadToCloudinary(file);
+            if (url) {
+                settingsUploadedPfpUrl = url;
+                document.getElementById('settings-pfp-view').src = url;
+                showToast("New profile picture loaded");
+            }
+        });
+
+        // Cloudinary Network Engine Interface
+        async function uploadToCloudinary(file) {
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('upload_preset', cloudinaryConfig.uploadPreset);
+
+            try {
+                const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudinaryConfig.cloudName}/upload`, {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await res.json();
+                if (data.secure_url) {
+                    return data.secure_url;
+                } else {
+                    showToast("Upload failed: " + data.error.message, "error");
+                    return null;
+                }
+            } catch (err) {
+                showToast("Cloudinary Storage upload processing exception", "error");
+                return null;
+            }
+        }
+
+        // Toggle authentication presentation states
+        window.toggleAuthMode = () => {
+            isLoginMode = !isLoginMode;
+            document.getElementById('auth-title').innerText = isLoginMode ? "Welcome Back" : "Create Account";
+            document.getElementById('auth-toggle-text').innerText = isLoginMode ? "New to the app, what are you waiting for?" : "Already have an account?";
+            document.getElementById('auth-toggle-link').innerText = isLoginMode ? "Signup now!" : "Login instead";
+            document.getElementById('auth-btn').innerText = isLoginMode ? "Sign In" : "Sign Up";
+        };
+
+        // Primary Core Authentication Processor
+        window.handleAuth = async () => {
+            const email = document.getElementById('email').value;
+            const pass = document.getElementById('password').value;
+            if(!email || !pass) return showToast("Required parameters missing", "error");
+
+            try {
+                if(isLoginMode) {
+                    await signInWithEmailAndPassword(auth, email, pass);
+                    showToast("Access Authorized");
+                } else {
+                    await createUserWithEmailAndPassword(auth, email, pass);
+                    showToast("Account Provisioned");
+                }
+            } catch (err) {
+                showToast(err.message, "error");
+            }
+        };
+
+        window.handleGoogleAuth = async () => {
+            try {
+                await signInWithPopup(auth, googleProvider);
+                showToast("Authenticated via Google");
+            } catch (err) {
+                showToast(err.message, "error");
+            }
+        };
+
+        window.logout = () => signOut(auth).then(() => window.location.reload());
+
+        // Track and Synchronize User Session State
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                document.getElementById('auth-section').classList.add('hidden');
+                // Query profile metadata synchronization state from RTDB
+                onValue(ref(db, `users/${user.uid}`), (snapshot) => {
+                    const profile = snapshot.val();
+                    currentUserProfile = profile;
+                    
+                    if (profile && profile.birthYear) {
+                        const currentYear = new Date().getFullYear();
+                        const parsedYear = parseInt(profile.birthYear, 10);
+                        const calculatedAge = currentYear - parsedYear;
+                        if (!isNaN(calculatedAge) && calculatedAge < 7) {
+                            document.getElementById('kids-restriction-screen').classList.remove('hidden');
+                            document.getElementById('mandatory-profile-drawer').classList.remove('active');
+                            document.getElementById('profile-settings-sidebar').classList.remove('active');
+                            document.getElementById('drawer-overlay').classList.remove('active');
+                            document.getElementById('user-dashboard').classList.add('hidden');
+                            document.getElementById('nav-user').classList.add('hidden');
+                            return;
+                        }
+                    }
+
+                    if (!profile || !profile.profileCompleted) {
+                        // Activate mandatory completion step layout overlay parameters
+                        document.getElementById('mandatory-profile-drawer').classList.add('active');
+                        document.getElementById('drawer-overlay').classList.add('active');
+                        document.getElementById('user-dashboard').classList.add('hidden');
+                        document.getElementById('nav-user').classList.add('hidden');
+                        document.getElementById('kids-restriction-screen').classList.add('hidden');
+                    } else {
+                        document.getElementById('mandatory-profile-drawer').classList.remove('active');
+                        document.getElementById('profile-settings-sidebar').classList.remove('active');
+                        document.getElementById('drawer-overlay').classList.remove('active');
+                        document.getElementById('kids-restriction-screen').classList.add('hidden');
+                        
+                        // Populate and configure operational interface elements
+                        document.getElementById('nav-user').classList.remove('hidden');
+                        document.getElementById('top-user-name').innerText = profile.displayName || user.email;
+                        document.getElementById('user-dashboard').classList.remove('hidden');
+                        loadUserComplaints(user.uid);
+                    }
+                });
+            } else {
+                document.getElementById('auth-section').classList.remove('hidden');
+                document.getElementById('user-dashboard').classList.add('hidden');
+                document.getElementById('nav-user').classList.add('hidden');
+                document.getElementById('kids-restriction-screen').classList.add('hidden');
+                closeAllDrawers();
+            }
+        });
+
+        // Mutate dynamic schema records inside Realtime Database
+        window.saveProfileData = async (isFromSettingsSidebar = false) => {
+            const user = auth.currentUser;
+            if(!user) return;
+
+            let dName, desc, bYear, picUrl;
+
+            if (isFromSettingsSidebar) {
+                dName = document.getElementById('settings-display-name').value;
+                desc = document.getElementById('settings-description').value;
+                bYear = document.getElementById('settings-birth-year').value;
+                picUrl = settingsUploadedPfpUrl || "https://www.w3schools.com/howto/img_avatar.png";
+            } else {
+                dName = document.getElementById('mandatory-display-name').value;
+                desc = document.getElementById('mandatory-description').value;
+                bYear = document.getElementById('mandatory-birth-year').value;
+                picUrl = mandatoryUploadedPfpUrl;
+            }
+
+            if(!dName || !desc || !bYear) {
+                showToast("All fields are mandatory to complete initialization", "error");
+                return;
+            }
+
+            const currentYear = new Date().getFullYear();
+            const parsedBirthYear = parseInt(bYear, 10);
+
+            if (isNaN(parsedBirthYear) || parsedBirthYear <= 0 || bYear.length > 4) {
+                showToast("Please enter a valid date", "error");
+                return;
+            }
+
+            const computedAge = currentYear - parsedBirthYear;
+
+            if (computedAge > 110) {
+                showToast("Only real birth years are allowed", "error");
+                return;
+            }
+
+            if (parsedBirthYear > currentYear) {
+                showToast("Please enter a valid date", "error");
+                return;
+            }
+
+            if (computedAge < 7) {
+                await update(ref(db, `users/${user.uid}`), {
+                    displayName: dName,
+                    description: desc,
+                    birthYear: bYear,
+                    profilePic: picUrl,
+                    profileCompleted: true
+                });
+                closeAllDrawers();
+                document.getElementById('kids-restriction-screen').classList.remove('hidden');
+                document.getElementById('user-dashboard').classList.add('hidden');
+                document.getElementById('nav-user').classList.add('hidden');
+                return;
+            }
+
+            await update(ref(db, `users/${user.uid}`), {
+                displayName: dName,
+                description: desc,
+                birthYear: bYear,
+                profilePic: picUrl,
+                profileCompleted: true
+            });
+
+            showToast("Profile identity metadata synced successfully");
+            closeAllDrawers();
+        };
+
+        window.toggleComplaintForm = () => {
+            document.getElementById('complaint-form').classList.toggle('hidden');
+            // Reset fields if form is closing/cancelled
+            if(document.getElementById('complaint-form').classList.contains('hidden')) {
+                document.getElementById('form-action-title').innerText = "Submit Support Request";
+                document.getElementById('edit-ticket-id').value = "";
+                document.getElementById('comp-topic').value = "";
+                document.getElementById('comp-message').value = "";
+                document.getElementById('comp-media').value = "";
+                document.getElementById('evidence-input-wrapper').classList.remove('hidden');
+                document.getElementById('ticket-submit-btn').innerText = "Send Ticket";
+            }
+        };
+
+        // Ticket Generation Logic Engine Flow Control (Includes dynamic inline Edit and Profanity Hooks)
+        window.submitComplaint = async () => {
+            const user = auth.currentUser;
+            if (!user) return;
+
+            const targetTicketId = document.getElementById('edit-ticket-id').value;
+            const platform = document.getElementById('comp-platform').value;
+            const priority = document.getElementById('comp-priority').value;
+            const topic = document.getElementById('comp-topic').value;
+            let message = document.getElementById('comp-message').value;
+            const mediaFile = document.getElementById('comp-media').files[0];
+
+            if(!topic || !message) {
+                showToast("Topic and bug description text parameters are required", "error");
+                return;
+            }
+
+            // Implement runtime scan evaluation against profanity indices
+            const topicCheck = parseAndFilterProfanity(topic);
+            const messageCheck = parseAndFilterProfanity(message);
+            let profanityTriggered = false;
+
+            if (topicCheck.found || messageCheck.found) {
+                profanityTriggered = true;
+                message = messageCheck.filteredText;
+                showToast("Please note that no profanities to be used towards Fluxionary staffs", "error");
+            }
+
+            let fileUrl = "";
+            // Skip asset upload if modifying text parameters exclusively on old documents
+            if(mediaFile && !targetTicketId) {
+                if(mediaFile.size > 70 * 1024 * 1024) {
+                    showToast("Evidence multimedia artifact exceeds 70MB validation target cutoff threshold", "error");
+                    return;
+                }
+                document.getElementById('upload-progress-label').classList.remove('hidden');
+                document.getElementById('ticket-submit-btn').disabled = true;
+                
+                fileUrl = await uploadToCloudinary(mediaFile);
+                
+                document.getElementById('upload-progress-label').classList.add('hidden');
+                document.getElementById('ticket-submit-btn').disabled = false;
+                
+                if(!fileUrl) return; 
+            }
+
+            if (targetTicketId) {
+                // Update implementation path
+                await update(ref(db, `complaints/${targetTicketId}`), {
+                    platform: platform,
+                    priority: priority,
+                    topic: topicCheck.filteredText,
+                    message: message
+                });
+                showToast("Complaint ticket updated effectively");
+            } else {
+                // Creation path sequence
+                const ticketRef = push(ref(db, 'complaints'));
+                const newId = ticketRef.key;
+                
+                await set(ticketRef, {
+                    uid: user.uid,
+                    email: user.email,
+                    platform: platform,
+                    priority: priority,
+                    topic: topicCheck.filteredText,
+                    message: message,
+                    evidence: fileUrl,
+                    status: 'Unseen', // Default initialization parameter state value string
+                    timestamp: new Date().toLocaleString()
+                });
+
+                showToast("Complaint ticket transmitted to support staff queue");
+
+                // Execute asynchronous 5-second automatic profanity handler routine if flag was raised
+                if (profanityTriggered) {
+                    setTimeout(async () => {
+                        const randomProfanityReply = profanityResponses[Math.floor(Math.random() * profanityResponses.length)];
+                        await update(ref(db, `complaints/${newId}`), {
+                            staffReply: randomProfanityReply,
+                            replyTimestamp: new Date().toLocaleString(),
+                            status: 'Seen',
+                            isAutomated: true
+                        });
+                    }, 5000);
+                }
+            }
+            
+            // Clean interface properties
+            document.getElementById('comp-topic').value = "";
+            document.getElementById('comp-message').value = "";
+            document.getElementById('comp-media').value = "";
+            document.getElementById('edit-ticket-id').value = "";
+            toggleComplaintForm();
+        };
+
+        // Edit Trigger operational handler mapping
+        window.initializeEditTicketFlow = (id, currentPlatform, currentPriority, currentTopic, currentMessage) => {
+            document.getElementById('complaint-form').classList.remove('hidden');
+            document.getElementById('form-action-title').innerText = "Edit Support Request";
+            document.getElementById('edit-ticket-id').value = id;
+            document.getElementById('comp-platform').value = currentPlatform;
+            document.getElementById('comp-priority').value = currentPriority;
+            document.getElementById('comp-topic').value = currentTopic;
+            document.getElementById('comp-message').value = currentMessage;
+            
+            // Hide media upload during edits to isolate structural description transformations
+            document.getElementById('evidence-input-wrapper').classList.add('hidden');
+            document.getElementById('ticket-submit-btn').innerText = "Save Changes";
+            window.scrollTo({ top: document.getElementById('complaint-form').offsetTop - 20, behavior: 'smooth' });
+        };
+
+        // Delete Trigger reference execution hook
+        window.executeDeleteTicketFlow = async (id) => {
+            if (confirm("Are you absolutely sure you want to discard this complaint record summary permanently?")) {
+                await remove(ref(db, `complaints/${id}`));
+                showToast("Complaint record destroyed successfully");
+            }
+        };
+
+        // Realtime sync data population listener loop interface components map
+        function loadUserComplaints(uid) {
+            onValue(ref(db, 'complaints'), (snapshot) => {
+                const container = document.getElementById('complaints-list');
+                container.innerHTML = "";
+                let count = 0;
+
+                snapshot.forEach((child) => {
+                    const id = child.key;
+                    const data = child.val();
+                    
+                    // Periodic processing evaluating ticket layout temporal parameters
+                    evaluateTicketLagUpdates(id, data);
+
+                    if(data.uid === uid) {
+                        count++;
+                        const card = document.createElement('div');
+                        card.className = "complaint-card fade-in";
+                        
+                        const badgeStyle = data.status === 'Unseen' ? 'status-pending' : 'status-seen';
+                        const displayStatus = data.status === 'Unseen' ? 'Not Seen' : data.status;
+                        
+                        // Escape character tokens cleanly to bypass programmatic inner HTML parsing crashes
+                        const escapedTopic = (data.topic || "").replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                        const escapedMessage = (data.message || "").replace(/'/g, "\\'").replace(/"/g, '&quot;');
+
+                        card.innerHTML = `
+                            <span class="ticket-timestamp">${data.timestamp}</span>
+                            <div class="ticket-meta">
+                                <div>
+                                    <strong>Platform:</strong> ${data.platform}
+                                    <span class="priority-badge p-${data.priority}">${data.priority.toUpperCase()}</span>
+                                </div>
+                                <span class="status-badge ${badgeStyle}">${displayStatus}</span>
+                            </div>
+                            <h3 style="margin: 10px 0; font-size:1.1rem; color: var(--primary);">${data.topic}</h3>
+                            <p style="font-size:0.95rem; margin-bottom:12px; white-space: pre-wrap;">${data.message}</p>
+                            ${data.evidence ? `<a href="${data.evidence}" target="_blank" style="font-size:0.8rem; color:var(--primary); text-decoration:none; display:inline-flex; align-items:center; gap:5px;"><i class="fas fa-paperclip"></i> View Captured Evidence Material</a>` : ''}
+                            
+                            ${data.staffReply ? `
+                                <div class="staff-reply">
+                                    <span class="ticket-timestamp">${data.replyTimestamp || ''}</span>
+                                    <strong style="color:var(--success); font-size:0.85rem;">
+                                        <i class="fas fa-reply"></i> Staff Reply:
+                                        ${data.isAutomated ? `<span class="automated-badge">Automated Response</span>` : ''}
+                                    </strong>
+                                    <p style="margin-top:5px; font-size:0.9rem;">${data.staffReply}</p>
+                                </div>
+                            ` : ''}
+
+                            <div class="ticket-actions">
+                                <button class="btn-action" onclick="initializeEditTicketFlow('${id}', '${data.platform}', '${data.priority}', '${escapedTopic}', '${escapedMessage}')">
+                                    <i class="fas fa-edit"></i> Edit Request
+                                </button>
+                                <button class="btn-action btn-action-delete" onclick="executeDeleteTicketFlow('${id}')">
+                                    <i class="fas fa-trash-alt"></i> Delete Log
+                                </button>
+                            </div>
+                        `;
+                        container.prepend(card);
+                    }
+                });
+
+                if(count === 0) {
+                    container.innerHTML = `<p style="text-align:center; color:var(--text-muted); padding:40px 0;">No logs matched user identifier profile tickets history context parameters.</p>`;
+                }
+            });
+        }
+    </script>
+</body>
+</html>
