@@ -22,8 +22,24 @@
             --sidebar-width: 300px;
         }
 
+        body.dark-theme {
+            --bg: #0f172a;
+            --card-bg: #1e293b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+        }
+
+        body.dark-theme nav { background: #1e293b; color: #f8fafc; }
+        body.dark-theme .sidebar { background: #1e293b; color: #f8fafc; }
+        body.dark-theme .profile-drawer { background: #1e293b; color: #f8fafc; }
+        body.dark-theme .auth-container { background: #1e293b; color: #f8fafc; }
+        body.dark-theme .complaint-card { background: #1e293b; color: #f8fafc; }
+        body.dark-theme input, body.dark-theme textarea, body.dark-theme select { background: #0f172a; color: #f8fafc; border: 1px solid #334155; }
+        body.dark-theme .staff-reply { background: #334155; color: #f8fafc; }
+        body.dark-theme .btn-action { background: #334155; color: #f8fafc; }
+
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
-        body { background-color: var(--bg); color: var(--text-main); line-height: 1.6; overflow-x: hidden; }
+        body { background-color: var(--bg); color: var(--text-main); line-height: 1.6; overflow-x: hidden; transition: background-color 0.3s, color 0.3s; }
 
         /* Utility Classes */
         .hidden { display: none !important; }
@@ -55,6 +71,13 @@
         /* Drawer Specifically for Mandatory Profile (Left Aligned for Distinguishing) */
         .profile-drawer { position: fixed; left: -100%; top: 0; width: 100%; max-width: 450px; height: 100%; background: white; box-shadow: 5px 0 25px rgba(0,0,0,0.1); z-index: 2000; transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1); padding: 40px 30px; overflow-y: auto; }
         .profile-drawer.active { left: 0; }
+
+        /* Additional Application Feature Drawers */
+        .ai-helper-drawer { position: fixed; right: -100%; top: 0; width: 100%; max-width: 450px; height: 100%; background: var(--card-bg); box-shadow: -5px 0 25px rgba(0,0,0,0.1); z-index: 2000; transition: 0.4s cubic-bezier(0.075, 0.82, 0.165, 1); padding: 40px 30px; overflow-y: auto; display: flex; flex-direction: column; }
+        .ai-helper-drawer.active { right: 0; }
+        
+        .global-settings-drawer { position: fixed; left: -100%; top: 0; width: 100%; max-width: 400px; height: 100%; background: var(--card-bg); box-shadow: 5px 0 25px rgba(0,0,0,0.1); z-index: 2000; transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1); padding: 40px 30px; overflow-y: auto; }
+        .global-settings-drawer.active { left: 0; }
 
         .drawer-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); opacity: 0; visibility: hidden; transition: 0.3s; z-index: 1000; backdrop-filter: blur(2px); }
         .drawer-overlay.active { opacity: 1; visibility: visible; }
@@ -104,6 +127,19 @@
         .btn-action { padding: 6px 12px; font-size: 0.8rem; border-radius: 4px; background: #f1f5f9; color: var(--text-main); font-weight: 500; display: inline-flex; align-items: center; gap: 4px; border: none; cursor: pointer; }
         .btn-action-delete { background: #fee2e2; color: #b91c1c; }
 
+        /* AI UI Components */
+        .ai-preset-option { display: block; width: 100%; text-align: left; background: rgba(37, 99, 235, 0.05); border: 1px solid rgba(37, 99, 235, 0.1); padding: 12px 16px; border-radius: 8px; font-size: 0.9rem; font-weight: 500; color: var(--primary); margin-bottom: 10px; cursor: pointer; transition: all 0.2s ease; }
+        .ai-preset-option:hover { background: var(--primary); color: white; transform: scale(1.01); }
+        .ai-chat-bubble { background: #f1f5f9; padding: 15px; border-radius: 12px; margin-top: 20px; font-size: 0.95rem; border-left: 4px solid var(--primary); animation: fadeIn 0.3s ease; }
+        body.dark-theme .ai-chat-bubble { background: #334155; }
+        .switch-container { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+        .toggle-switch { position: relative; display: inline-block; width: 50px; height: 26px; }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; inset: 0; background-color: #cbd5e1; transition: .4s; border-radius: 34px; }
+        .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: var(--primary); }
+        input:checked + .slider:before { transform: translateX(24px); }
+
         @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
         .fade-in { animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
@@ -127,7 +163,9 @@
             <input type="text" id="settings-display-name">
         </div>
         
-        <button class="btn" style="background: #fee2e2; color: #b91c1c; width: 100%; margin-bottom: 20px;" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
+        <button class="btn" style="background: #fee2e2; color: #b91c1c; width: 100%; margin-bottom: 15px;" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
+        <button class="btn id="sidebar-ai-helper-btn" style="background: rgba(37,99,235,0.1); color: var(--primary); width: 100%; margin-bottom: 15px;" onclick="openAIHelperDrawer()"><i class="fas fa-robot"></i> AI Helper</button>
+        <button class="btn" style="background: #f1f5f9; color: var(--text-main); width: 100%; margin-bottom: 20px;" onclick="openGlobalSettingsDrawer()"><i class="fas fa-sliders-h"></i> App Settings</button>
 
         <div class="input-group">
             <label>Description</label>
@@ -166,11 +204,70 @@
         <button class="btn btn-primary" id="mandatory-save-btn" onclick="saveProfileData(false)">Save & Continue</button>
     </div>
 
+    <div class="ai-helper-drawer" id="app-ai-helper-drawer">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:25px;">
+            <h2><i class="fas fa-robot" style="color:var(--primary);"></i> Fluxionary AI Agent</h2>
+            <button class="btn" style="padding:8px; background:rgba(0,0,0,0.05); border-radius:50%;" onclick="closeAllDrawers()"><i class="fas fa-times"></i></button>
+        </div>
+        <p style="color:var(--text-muted); font-size:0.85rem; margin-bottom:20px;">Select an issue configuration target below to process an automated diagnostic consultation stream:</p>
+        
+        <div style="flex:1;">
+            <button class="ai-preset-option" onclick="triggerAIPresetResponse(1)">How do I submit a new complaint record ticket?</button>
+            <button class="ai-preset-option" onclick="triggerAIPresetResponse(2)">What parameter fields do the priority levels signify?</button>
+            <button class="ai-preset-option" onclick="triggerAIPresetResponse(3)">How can I transform or modify an active ticket log?</button>
+            <button class="ai-preset-option" onclick="triggerAIPresetResponse(4)">What file formats and layout structures are allowed for evidence?</button>
+            <button class="ai-preset-option" onclick="triggerAIPresetResponse(5)">How long does it take for human staff agents to verify a submission?</button>
+
+            <div id="ai-response-output-bubble" class="ai-chat-bubble hidden"></div>
+        </div>
+
+        <div style="font-size:0.75rem; color:var(--text-muted); text-align:center; padding-top:20px; border-top:1px dashed #cbd5e1; margin-top:20px;">
+            AI helper is an experimental feature that can be turned off in settings.
+        </div>
+    </div>
+
+    <div class="global-settings-drawer" id="app-global-settings-drawer">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:25px;">
+            <h2><i class="fas fa-sliders-h"></i> Configuration Options</h2>
+            <button class="btn" style="padding:8px; background:rgba(0,0,0,0.05); border-radius:50%;" onclick="closeAllDrawers()"><i class="fas fa-times"></i></button>
+        </div>
+        <hr style="opacity: 0.1; margin-bottom: 25px;">
+
+        <div class="switch-container">
+            <div>
+                <strong>Enable Dark Mode</strong>
+                <div style="font-size:0.8rem; color:var(--text-muted);">Inverts structural environment colors</div>
+            </div>
+            <label class="toggle-switch">
+                <input type="checkbox" id="settings-darkmode-toggle" onchange="handleDarkThemeToggle(this.checked)">
+                <span class="slider"></span>
+            </label>
+        </div>
+
+        <div class="switch-container">
+            <div>
+                <strong>Enable AI Helper Feature</strong>
+                <div style="font-size:0.8rem; color:var(--text-muted);">Toggles visibility of the AI drawer interfaces</div>
+            </div>
+            <label class="toggle-switch">
+                <input type="checkbox" id="settings-aihelper-toggle" checked onchange="handleAIHelperToggle(this.checked)">
+                <span class="slider"></span>
+            </label>
+        </div>
+    </div>
+
     <div id="kids-restriction-screen" class="auth-container hidden fade-in" style="max-width: 500px; text-align: center;">
         <i class="fas fa-child" style="font-size: 4rem; color: var(--error); margin-bottom: 20px;"></i>
         <h2>App not for kids under the age of 7</h2>
         <p style="color: var(--text-muted); margin-top: 10px; margin-bottom: 25px;">For compliance and safety parameters, you must be 7 years or older to proceed with Fluxionary Support.</p>
         <button class="btn btn-primary" style="background: var(--error);" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
+    </div>
+
+    <div id="ban-restriction-screen" class="auth-container hidden fade-in" style="max-width: 500px; text-align: center;">
+        <i class="fas fa-ban" style="font-size: 4rem; color: var(--error); margin-bottom: 20px;"></i>
+        <h2>Account Permanently Banned</h2>
+        <p style="color: var(--text-muted); margin-top: 10px; margin-bottom: 25px;">This account hash index parameter has been indefinitely restricted due to systematic profanity violations context rules criteria matched matches.</p>
+        <button class="btn btn-primary" style="background: var(--error);" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Disconnect</button>
     </div>
 
     <nav>
@@ -310,6 +407,27 @@
             "testicle", "tit", "vagina", "viagra", "vulva", "xxx", "b1tch", "f0ck", "f_u_c_k", "phuck", "sh!t"
         ];
 
+        // 300+ Words Extensive Restriction Database for staff inputs including specific target triggers
+        const staffProfanityList = [
+            "stupid", "dumb", "idiot", "moron", "retard", "fool", "brainless", "clown", "garbage", "trash", "worthless", "pathetic", "useless", "shut", "dick", "ass", "bitch", "bastard", "hate", "kill",
+            "loser", "nonsense", "imbecile", "cretin", "dimwit", "nitwit", "blockhead", "dunce", "simpleton", "numbskull", "thickhead", "bonehead", "airhead", "birdbrain", "halfwit", "doofus", "dingbat", "dork", "twit", "buffoon",
+            "jackass", "charlatan", "scoundrel", "rascal", "reprobate", "miscreant", "varmint", "swindler", "cheat", "fraud", "phony", "impostor", "viper", "serpent", "snake", "monster", "demon", "fiend", "satan", "devil",
+            "brute", "savage", "barbarian", "beast", "animal", "pig", "swine", "dog", "hound", "skunk", "rat", "weasel", "leech", "parasite", "pest", "vermin", "maggot", "worm", "insect", "bug",
+            "toad", "reptile", "scum", "sludge", "slime", "filth", "muck", "dirt", "manure", "dung", "sewage", "refuse", "debris", "wreck", "disaster", "failure", "flop", "dud", "lemon", "washout",
+            "hasbeen", "nobody", "nonentity", "cipher", "blank", "zero", "null", "void", "vacuum", "shadow", "ghost", "phantom", "specter", "goblin", "ghoul", "vampire", "witch", "hag", "crone", "harpy",
+            "gorgon", "vixen", "shrew", "termagant", "scold", "nag", "bore", "nuisance", "bother", "annoyance", "pestilence", "plague", "blight", "cancer", "tumor", "ulcer", "rot", "decay", "corruption", "poison",
+            "venom", "toxin", "bane", "curse", "scourge", "affliction", "misery", "woe", "grief", "agony", "torment", "torture", "hell", "purgatory", "abyss", "pit", "void", "chasm", "gulf", "prison",
+            "jail", "cage", "trap", "noose", "gallows", "guillotine", "executioner", "butcher", "slaughterer", "assassin", "murderer", "thief", "robber", "bandit", "pirate", "corsair", "buccaneer", "brigand", "outlaw", "desperado",
+            "gangster", "mobster", "thug", "hoodlum", "hooligan", "ruffian", "rowdy", "bully", "oppressor", "tyrant", "despot", "dictator", "autocrat", "monarch", "emperor", "czar", "kaiser", "king", "prince", "lord",
+            "master", "ruler", "chief", "leader", "captain", "commander", "general", "admiral", "officer", "soldier", "warrior", "knight", "champion", "hero", "savior", "defender", "guardian", "protector", "warden", "keeper",
+            "steward", "trustee", "agent", "deputy", "delegate", "proxy", "envoy", "ambassador", "diplomat", "statesman", "politician", "bureaucrat", "official", "administrator", "manager", "director", "executive", "boss", "supervisor", "overseer",
+            "superintendent", "foreman", "headman", "chieftain", "patriarch", "matriarch", "ancestor", "forefather", "predecessor", "pioneer", "founder", "creator", "author", "architect", "builder", "maker", "producer", "fabricator", "artisan", "craftsman",
+            "workman", "laborer", "drudge", "peon", "serf", "slave", "bondman", "captive", "prisoner", "hostage", "victim", "martyr", "sufferer", "patient", "invalid", "cripple", "paralytic", "mutilated", "deformed", "dwarf",
+            "giant", "monster", "freak", "anomaly", "abortion", "miscarriage", "failure", "mistake", "error", "blunder", "slip", "lapse", "oversight", "omission", "fault", "defect", "flaw", "blemish", "spot", "stain",
+            "blot", "smudge", "blur", "speck", "particle", "atom", "molecule", "drop", "grain", "crumb", "scrap", "shred", "fragment", "piece", "part", "portion", "share", "allotment", "quota", "contingent",
+            "stinkin", "lousy", "rotten", "spoiled", "tainted", "infected", "diseased", "morbid", "toxic", "noxious", "lethal", "deadly", "mortal", "fatal", "destructive", "ruinous", "pernicious", "malignant", "malicious", "spiteful"
+        ];
+
         // 10 Standard Auto Responses for Tickets > 20 Hours Pending
         const delayResponses = [
             "Request noted",
@@ -348,15 +466,29 @@
             "Dear valued user, ensure no profanities are directed towards Fluxionary staff, as persistent toxic interaction sets account bans active."
         ];
 
+        // 5 Preset Responses for AI Helper Option Matrix Execution Parameters
+        const aiHelperPresets = {
+            1: "To submit a new support request ticket, finalize your onboarding steps, click the 'Send Complaint Ticket' primary canvas button on your user dashboard, enter the programmatic platform target environment values, summarize your technical topic and bug details, append optional evidence artifacts under 70MB, and hit 'Send Ticket' to append it to the live database queue.",
+            2: "Priority parameters are categorized structurally into three clear scopes: 'Low' represents localized frontend stylistic anomalies or configuration questions; 'Medium' indicates an impedance of user interactions across non-critical functional branches; and 'High' targets fatal runtime system operations exceptions, server database sync failures, or authentication gateway barriers.",
+            3: "Transforming or modifying an operational ticket description log can be initiated directly within your active workspace. Click the 'Edit Request' button embedded inside the target complaint card. The global modal engine handles payload translation and populates the data fields, letting you re-transmit updated text parameters directly to the underlying real-time table indices.",
+            4: "Our secure evidence storage cluster supports graphic files (.png, .jpg, .jpeg, .gif), video assets (.mp4, .mov, .avi, .mkv), and documentation arrays (.pdf). Submissions are bound to a critical performance validation ceiling of exactly 70MB maximum cutoff threshold per request token stream.",
+            5: "Standard manual human operational diagnostic cycles review outstanding ticket logs chronologically within typical operating parameters. However, if a ticket remains in an unread 'Unseen' parameter configuration context tracking state for more than 20 structural hours, fallback automated loops trigger automatic macro updates and dispatch notification updates."
+        };
+
         // Profanity Parsing and Censorship Engine Logic
         function parseAndFilterProfanity(text) {
             let found = false;
             let filteredText = text;
+            let weightPoints = 0;
 
             profanityList.forEach(word => {
                 const regex = new RegExp(`\\b${word}\\b`, 'gi');
                 if (regex.test(filteredText)) {
                     found = true;
+                    // Count occurrence frequency metrics
+                    const matchesCount = (filteredText.match(regex) || []).length;
+                    weightPoints += (matchesCount * 10);
+
                     filteredText = filteredText.replace(regex, (match) => {
                         if (match.length <= 2) return "*".repeat(match.length);
                         const start = match[0];
@@ -367,7 +499,19 @@
                 }
             });
 
-            return { found, filteredText };
+            return { found, filteredText, weightPoints };
+        }
+
+        // Staff Profanity Filter Validation Engine Routine Hook
+        function verifyStaffReplyContentSafety(text) {
+            let containsAbuse = false;
+            staffProfanityList.forEach(word => {
+                const regex = new RegExp(`\\b${word}\\b`, 'gi');
+                if (regex.test(text)) {
+                    containsAbuse = true;
+                }
+            });
+            return containsAbuse;
         }
 
         // Automated Processing Cycle for > 20 Hours Lag Checks
@@ -382,6 +526,13 @@
 
             if (finalDiffHours >= 20) {
                 const randomReply = delayResponses[Math.floor(Math.random() * delayResponses.length)];
+                
+                // Intercept and assert safety filtering mechanics on automated response blocks prior to database output mutation
+                if (verifyStaffReplyContentSafety(randomReply)) {
+                    alert("Abusive message not sent");
+                    return;
+                }
+
                 update(ref(db, `complaints/${ticketId}`), {
                     staffReply: randomReply,
                     replyTimestamp: new Date().toLocaleString(),
@@ -403,8 +554,15 @@
         };
 
         window.closeAllDrawers = () => {
+            // CRITICAL INJECTION MANDATORY FIX: User cannot close the profile pop-up window if an account has an uncompleted profile state
+            if (auth.currentUser && (!currentUserProfile || !currentUserProfile.profileCompleted)) {
+                showToast("You must complete your user initialization parameters before dismissing this window screen setup view.", "error");
+                return;
+            }
             document.getElementById('profile-settings-sidebar').classList.remove('active');
             document.getElementById('mandatory-profile-drawer').classList.remove('active');
+            document.getElementById('app-ai-helper-drawer').classList.remove('active');
+            document.getElementById('app-global-settings-drawer').classList.remove('active');
             document.getElementById('drawer-overlay').classList.remove('active');
         };
 
@@ -428,6 +586,41 @@
             
             document.getElementById('profile-settings-sidebar').classList.add('active');
             document.getElementById('drawer-overlay').classList.add('active');
+        };
+
+        window.openAIHelperDrawer = () => {
+            if (!auth.currentUser) return;
+            document.getElementById('app-ai-helper-drawer').classList.add('active');
+            document.getElementById('drawer-overlay').classList.add('active');
+        };
+
+        window.openGlobalSettingsDrawer = () => {
+            if (!auth.currentUser) return;
+            document.getElementById('app-global-settings-drawer').classList.add('active');
+            document.getElementById('drawer-overlay').classList.add('active');
+        };
+
+        window.triggerAIPresetResponse = (index) => {
+            const outputBubble = document.getElementById('ai-response-output-bubble');
+            outputBubble.classList.remove('hidden');
+            outputBubble.innerText = aiHelperPresets[index] || "Processing exception execution array reference match index anomaly.";
+        };
+
+        window.handleDarkThemeToggle = (isChecked) => {
+            if (isChecked) {
+                document.body.classList.add('dark-theme');
+            } else {
+                document.body.classList.remove('dark-theme');
+            }
+        };
+
+        window.handleAIHelperToggle = (isChecked) => {
+            const btn = document.getElementById('sidebar-ai-helper-btn');
+            if (isChecked) {
+                btn.classList.remove('hidden');
+            } else {
+                btn.classList.add('hidden');
+            }
         };
 
         // Localized image file upload parsing handlers
@@ -533,6 +726,18 @@
                     const profile = snapshot.val();
                     currentUserProfile = profile;
                     
+                    if (profile && profile.demeritPoints >= 1000) {
+                        document.getElementById('ban-restriction-screen').classList.remove('hidden');
+                        document.getElementById('mandatory-profile-drawer').classList.remove('active');
+                        document.getElementById('profile-settings-sidebar').classList.remove('active');
+                        document.getElementById('app-ai-helper-drawer').classList.remove('active');
+                        document.getElementById('app-global-settings-drawer').classList.remove('active');
+                        document.getElementById('drawer-overlay').classList.remove('active');
+                        document.getElementById('user-dashboard').classList.add('hidden');
+                        document.getElementById('nav-user').classList.add('hidden');
+                        return;
+                    }
+
                     if (profile && profile.birthYear) {
                         const currentYear = new Date().getFullYear();
                         const parsedYear = parseInt(profile.birthYear, 10);
@@ -541,6 +746,8 @@
                             document.getElementById('kids-restriction-screen').classList.remove('hidden');
                             document.getElementById('mandatory-profile-drawer').classList.remove('active');
                             document.getElementById('profile-settings-sidebar').classList.remove('active');
+                            document.getElementById('app-ai-helper-drawer').classList.remove('active');
+                            document.getElementById('app-global-settings-drawer').classList.remove('active');
                             document.getElementById('drawer-overlay').classList.remove('active');
                             document.getElementById('user-dashboard').classList.add('hidden');
                             document.getElementById('nav-user').classList.add('hidden');
@@ -573,6 +780,7 @@
                 document.getElementById('user-dashboard').classList.add('hidden');
                 document.getElementById('nav-user').classList.add('hidden');
                 document.getElementById('kids-restriction-screen').classList.add('hidden');
+                document.getElementById('ban-restriction-screen').classList.add('hidden');
                 closeAllDrawers();
             }
         });
@@ -621,15 +829,20 @@
                 return;
             }
 
+            // Capture pre-existing points baseline structural configurations fields values
+            const preExistingPoints = (currentUserProfile && currentUserProfile.demeritPoints) ? currentUserProfile.demeritPoints : 0;
+
             if (computedAge < 7) {
                 await update(ref(db, `users/${user.uid}`), {
                     displayName: dName,
                     description: desc,
                     birthYear: bYear,
                     profilePic: picUrl,
-                    profileCompleted: true
+                    profileCompleted: true,
+                    demeritPoints: preExistingPoints
                 });
-                closeAllDrawers();
+                // Bypass onboarding guard restriction explicitly since age boundary structural failure terminates profile lifecycle 
+                document.getElementById('mandatory-profile-drawer').classList.remove('active');
                 document.getElementById('kids-restriction-screen').classList.remove('hidden');
                 document.getElementById('user-dashboard').classList.add('hidden');
                 document.getElementById('nav-user').classList.add('hidden');
@@ -641,11 +854,14 @@
                 description: desc,
                 birthYear: bYear,
                 profilePic: picUrl,
-                profileCompleted: true
+                profileCompleted: true,
+                demeritPoints: preExistingPoints
             });
 
             showToast("Profile identity metadata synced successfully");
-            closeAllDrawers();
+            // Allow programmatic dismissal of viewports since user profile completion requirements are successfully passed
+            document.getElementById('mandatory-profile-drawer').classList.remove('active');
+            document.getElementById('drawer-overlay').classList.remove('active');
         };
 
         window.toggleComplaintForm = () => {
@@ -667,6 +883,29 @@
             const user = auth.currentUser;
             if (!user) return;
 
+            // Enforce Hidden Dynamic Penalty System Restriction Intercept Boundaries
+            if (currentUserProfile) {
+                const points = currentUserProfile.demeritPoints || 0;
+                const lastPenTimeStr = currentUserProfile.lastPenaltyTimestamp;
+                
+                if (points >= 1000) {
+                    alert("This account hash index parameter has been indefinitely restricted due to systematic profanity violations context rules criteria matched matches.");
+                    return;
+                }
+                
+                if (lastPenTimeStr) {
+                    const elapsedMs = new Date() - new Date(lastPenTimeStr);
+                    if (points >= 200 && elapsedMs < (1 * 24 * 60 * 60 * 1000)) {
+                        alert("Account authentication operations are temporarily frozen for 1 day due to point demerit bounds.");
+                        return;
+                    }
+                    if (points >= 100 && elapsedMs < (2 * 24 * 60 * 60 * 1000)) {
+                        alert("Ticket transmission mechanisms are blocked for 2 days due to demerit validation rules.");
+                        return;
+                    }
+                }
+            }
+
             const targetTicketId = document.getElementById('edit-ticket-id').value;
             const platform = document.getElementById('comp-platform').value;
             const priority = document.getElementById('comp-priority').value;
@@ -683,11 +922,36 @@
             const topicCheck = parseAndFilterProfanity(topic);
             const messageCheck = parseAndFilterProfanity(message);
             let profanityTriggered = false;
+            let pointsAccruedThisTurn = topicCheck.weightPoints + messageCheck.weightPoints;
 
             if (topicCheck.found || messageCheck.found) {
                 profanityTriggered = true;
                 message = messageCheck.filteredText;
                 showToast("Please note that no profanities to be used towards Fluxionary staffs", "error");
+
+                // Background point serialization updating operations logic loop
+                let internalCurrentPoints = (currentUserProfile && currentUserProfile.demeritPoints) ? currentUserProfile.demeritPoints : 0;
+                let finalCalculatedPoints = internalCurrentPoints + pointsAccruedThisTurn;
+
+                let updatesMapObj = { demeritPoints: finalCalculatedPoints };
+                if (finalCalculatedPoints >= 100 || finalCalculatedPoints >= 200) {
+                    updatesMapObj.lastPenaltyTimestamp = new Date().toLocaleString();
+                }
+
+                await update(ref(db, `users/${user.uid}`), updatesMapObj);
+
+                // Check and fire dynamic pop-up warning thresholds synchronously
+                if (finalCalculatedPoints >= 25 && finalCalculatedPoints < 100 && internalCurrentPoints < 25) {
+                    alert("Warning: Profanity threshold reached 25 points. Stop this behavior to protect account access parameters stability.");
+                } else if (finalCalculatedPoints >= 100 && finalCalculatedPoints < 200 && internalCurrentPoints < 100) {
+                    alert("Demerit limit exceeded 100 points! You are barred from transferring complaint request documents for a sequence of 2 days.");
+                } else if (finalCalculatedPoints >= 200 && finalCalculatedPoints < 1000 && internalCurrentPoints < 200) {
+                    alert("Demerit limit exceeded 200 points! Account suspension sequence triggered for 1 standard operational day.");
+                } else if (finalCalculatedPoints >= 1000) {
+                    alert("Critical demerit bounds breached. Profile account parameter locked permanently.");
+                    window.location.reload();
+                    return;
+                }
             }
 
             let fileUrl = "";
@@ -740,6 +1004,13 @@
                 if (profanityTriggered) {
                     setTimeout(async () => {
                         const randomProfanityReply = profanityResponses[Math.floor(Math.random() * profanityResponses.length)];
+                        
+                        // Guard programmatic automated outputs against internal abusive staff arrays match checks
+                        if (verifyStaffReplyContentSafety(randomProfanityReply)) {
+                            alert("Abusive message not sent");
+                            return;
+                        }
+
                         await update(ref(db, `complaints/${newId}`), {
                             staffReply: randomProfanityReply,
                             replyTimestamp: new Date().toLocaleString(),
