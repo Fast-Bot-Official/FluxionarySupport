@@ -148,6 +148,80 @@
         @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
         .fade-in { animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
+        /* New Full-Screen Restriction Overlay Styles */
+        .fullscreen-restriction {
+            position: fixed;
+            inset: 0;
+            background: var(--bg);
+            color: var(--text-main);
+            z-index: 99999;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            text-align: center;
+        }
+
+        /* Highly Animated Sassy AI Helper Elements */
+        .ai-title-sparkle {
+            animation: textPulse 1.5s ease-in-out infinite alternate;
+        }
+        @keyframes textPulse {
+            from { text-shadow: 0 0 4px rgba(37,99,235,0.2); transform: scale(1); }
+            to { text-shadow: 0 0 12px rgba(37,99,235,0.6); transform: scale(1.02); }
+        }
+        .ai-agent-avatar-container {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 15px;
+        }
+        .ai-animated-icon {
+            font-size: 2.5rem;
+            color: var(--primary);
+            animation: bounceRobot 2s infinite ease-in-out;
+        }
+        @keyframes bounceRobot {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-10px) rotate(5deg); }
+        }
+        .thinking-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            gap: 10px;
+        }
+        .thinking-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(37, 99, 235, 0.1);
+            border-top: 4px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .thinking-status-text {
+            font-weight: 600;
+            font-size: 0.95rem;
+            color: var(--primary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .draft-notice-banner {
+            background: rgba(245, 158, 11, 0.1);
+            border: 1px dashed var(--warning);
+            color: var(--warning);
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            margin-bottom: 15px;
+            text-align: center;
+        }
     </style>
 </head>
 <body>
@@ -156,16 +230,22 @@
     <div class="drawer-overlay" id="drawer-overlay" onclick="closeAllDrawers()"></div>
 
     <div class="sidebar" id="profile-settings-sidebar">
-        <h2 style="margin-bottom: 20px;"><i class="fas fa-cog"></i> Profile Settings</h2>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h2><i class="fas fa-cog"></i> Profile Settings</h2>
+            <button class="btn" style="padding: 8px; background: rgba(0,0,0,0.05); border-radius: 50%;" onclick="closeAllDrawers()"><i class="fas fa-times"></i></button>
+        </div>
         <hr style="opacity: 0.1; margin-bottom: 20px;">
+        
+        <div id="sidebar-draft-banner-target" class="hidden"></div>
+
         <div class="pfp-container">
             <img id="settings-pfp-view" class="pfp-preview" src="" alt="Pfp">
             <input type="file" id="settings-pfp-input" accept="image/*" style="display:none;">
             <button class="btn" style="padding: 6px 12px; font-size: 0.8rem; background: #e2e8f0;" onclick="document.getElementById('settings-pfp-input').click()">Change Picture</button>
         </div>
         <div class="input-group">
-            <label>Display Name</label>
-            <input type="text" id="settings-display-name">
+            <label>Display Name (3-10 characters)</label>
+            <input type="text" id="settings-display-name" oninput="handleSidebarDraftCaching()">
         </div>
         
         <button class="btn" style="background: #fee2e2; color: #b91c1c; width: 100%; margin-bottom: 15px;" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
@@ -174,11 +254,11 @@
 
         <div class="input-group">
             <label>Description</label>
-            <textarea id="settings-description" rows="3"></textarea>
+            <textarea id="settings-description" rows="3" oninput="handleSidebarDraftCaching()"></textarea>
         </div>
         <div class="input-group">
             <label>Birth Year</label>
-            <input type="number" id="settings-birth-year">
+            <input type="number" id="settings-birth-year" oninput="handleSidebarDraftCaching()">
         </div>
         <button class="btn btn-primary" onclick="saveProfileData(true)">Save Updates</button>
     </div>
@@ -195,7 +275,7 @@
             <span style="font-size:0.75rem; color: var(--text-muted);">Max size: 5MB</span>
         </div>
         <div class="input-group">
-            <label>Display Name</label>
+            <label>Display Name (3-10 characters)</label>
             <input type="text" id="mandatory-display-name" placeholder="John Doe">
         </div>
         <div class="input-group">
@@ -211,12 +291,19 @@
 
     <div class="ai-helper-drawer" id="app-ai-helper-drawer">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:25px;">
-            <h2><i class="fas fa-robot" style="color:var(--primary);"></i> Fluxionary AI Agent</h2>
+            <h2 class="ai-title-sparkle"><i class="fas fa-robot" style="color:var(--primary);"></i> Fluxionary Sassy AI</h2>
             <button class="btn" style="padding:8px; background:rgba(0,0,0,0.05); border-radius:50%;" onclick="closeAllDrawers()"><i class="fas fa-times"></i></button>
         </div>
-        <p style="color:var(--text-muted); font-size:0.85rem; margin-bottom:20px;">Select an issue configuration target below to process an automated diagnostic consultation stream:</p>
         
-        <div style="flex:1;">
+        <div class="ai-agent-avatar-container">
+            <i class="fas fa-ghost ai-animated-icon"></i>
+        </div>
+        
+        <p id="ai-helper-narrative-subtitle" style="color:var(--text-muted); font-size:0.85rem; margin-bottom:20px; font-style: italic; text-align: center;">
+            "Oh, look who decided to look for answers! Go ahead, click a field. Let's see if your question matches my high-fidelity processing capabilities, doll."
+        </p>
+        
+        <div style="flex:1;" id="ai-drawer-dynamic-interaction-workspace">
             <button class="ai-preset-option" onclick="triggerAIPresetResponse(1)">How do I submit a new complaint record ticket?</button>
             <button class="ai-preset-option" onclick="triggerAIPresetResponse(2)">What parameter fields do the priority levels signify?</button>
             <button class="ai-preset-option" onclick="triggerAIPresetResponse(3)">How can I transform or modify an active ticket log?</button>
@@ -261,28 +348,27 @@
         </div>
     </div>
 
-    <div id="kids-restriction-screen" class="auth-container hidden fade-in" style="max-width: 500px; text-align: center;">
-        <i class="fas fa-child" style="font-size: 4rem; color: var(--error); margin-bottom: 20px;"></i>
+    <div id="kids-restriction-screen" class="fullscreen-restriction hidden fade-in">
+        <i class="fas fa-child" style="font-size: 5rem; color: var(--error); margin-bottom: 20px;"></i>
         <h2>App not for kids under the age of 7</h2>
-        <p style="color: var(--text-muted); margin-top: 10px; margin-bottom: 25px;">For compliance and safety parameters, you must be 7 years or older to proceed with Fluxionary Support.</p>
-        <button class="btn btn-primary" style="background: var(--error);" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
+        <p style="color: var(--text-muted); max-width: 500px; margin-top: 10px; margin-bottom: 25px;">For compliance and safety parameters, you must be 7 years or older to proceed with Fluxionary Support.</p>
+        <button class="btn btn-primary" style="background: var(--error); width: auto;" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
     </div>
 
-    <div id="ban-restriction-screen" class="auth-container hidden fade-in" style="max-width: 500px; text-align: center;">
-        <i class="fas fa-ban" style="font-size: 4rem; color: var(--error); margin-bottom: 20px;"></i>
+    <div id="ban-restriction-screen" class="fullscreen-restriction hidden fade-in">
+        <i class="fas fa-ban" style="font-size: 5rem; color: var(--error); margin-bottom: 20px;"></i>
         <h2>Account Permanently Banned</h2>
-        <p id="ban-explanation-paragraph" style="color: var(--text-muted); margin-top: 10px; margin-bottom: 25px;">This account hash index parameter has been indefinitely restricted due to systematic profanity violations context rules criteria matched matches.</p>
-        <button class="btn btn-primary" style="background: var(--error);" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Disconnect</button>
+        <p id="ban-explanation-paragraph" style="color: var(--text-muted); max-width: 500px; margin-top: 10px; margin-bottom: 25px;">This account hash index parameter has been indefinitely restricted due to systematic profanity violations context rules criteria matched matches.</p>
+        <button class="btn btn-primary" style="background: var(--error); width: auto;" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Disconnect</button>
     </div>
 
     <nav>
         <div style="display: flex; align-items: center; gap: 15px;">
-            <div class="hamburger-menu" onclick="openSettingsSidebar()"><i class="fas fa-bars"></i></div>
+            <div class="hamburger-menu" id="nav-hamburger-menu-trigger-btn" onclick="openSettingsSidebar()"><i class="fas fa-bars"></i></div>
             <div class="logo" onclick="openSettingsSidebar()"><i class="fas fa-headset"></i> Fluxionary Support</div>
         </div>
         <div id="nav-user" class="hidden" style="display: flex; align-items: center; gap: 15px;">
             <span id="top-user-name" style="font-weight: 600;" onclick="openSettingsSidebar()"></span>
-            <button class="btn" style="background: #f1f5f9; padding: 8px 16px;" onclick="openSettingsSidebar()"><i class="fas fa-user-cog"></i> Profile Settings</button>
         </div>
     </nav>
 
@@ -359,6 +445,9 @@
             <div class="input-group" id="evidence-input-wrapper">
                 <label>Evidence Media File (Video, Photo, or PDF - Max 70MB, Limit 1)</label>
                 <input type="file" id="comp-media" accept="image/*,video/*,application/pdf">
+                <div style="margin-top: 8px; display: flex; align-items: center; gap: 10px;">
+                    <span style="font-size: 0.85rem; color: var(--text-muted);"><i class="fas fa-camera"></i> Direct capture alternatives supported via file selection matrix.</span>
+                </div>
                 <div id="upload-progress-label" style="font-size:0.8rem; color: var(--primary); margin-top:5px;" class="hidden">Uploading evidence to secure storage...</div>
             </div>
 
@@ -401,6 +490,14 @@
         let currentUserProfile = null;
         let mandatoryUploadedPfpUrl = "https://www.w3schools.com/howto/img_avatar.png";
         let settingsUploadedPfpUrl = "";
+
+        // Volatile Sidebar State Cache Object Variables mapping targets
+        let sidebarDraftMemoryCache = {
+            displayName: null,
+            description: null,
+            birthYear: null,
+            cachedTimestampString: null
+        };
 
         // 100+ Extensive Profanity Filter Database array parameters initialization 
         const profanityList = [
@@ -616,25 +713,68 @@
             updateRealtimeTelemetryActivity();
         };
 
+        // Handled Sidebar Unsaved Progress Caching Infrastructure Hook
+        window.handleSidebarDraftCaching = () => {
+            const currentDName = document.getElementById('settings-display-name').value;
+            const currentDesc = document.getElementById('settings-description').value;
+            const currentBYear = document.getElementById('settings-birth-year').value;
+
+            const databaseDName = currentUserProfile ? (currentUserProfile.displayName || '') : '';
+            const databaseDesc = currentUserProfile ? (currentUserProfile.description || '') : '';
+            const databaseBYear = currentUserProfile ? (currentUserProfile.birthYear || '') : '';
+
+            if (currentDName !== databaseDName || currentDesc !== databaseDesc || currentBYear !== databaseBYear) {
+                sidebarDraftMemoryCache.displayName = currentDName;
+                sidebarDraftMemoryCache.description = currentDesc;
+                sidebarDraftMemoryCache.birthYear = currentBYear;
+                if (!sidebarDraftMemoryCache.cachedTimestampString) {
+                    sidebarDraftMemoryCache.cachedTimestampString = new Date().toLocaleString();
+                }
+            } else {
+                sidebarDraftMemoryCache.displayName = null;
+                sidebarDraftMemoryCache.description = null;
+                sidebarDraftMemoryCache.birthYear = null;
+                sidebarDraftMemoryCache.cachedTimestampString = null;
+            }
+        };
+
         window.openSettingsSidebar = () => {
             // AUTHENTICATION GUARD FIX: Ensure sidebar cannot open when user session is unauthorized or empty
             if (!auth.currentUser) {
                 return;
             }
 
-            // Check if profile exists; if not, populate default values for onboarding fallback view state
-            const targetDisplayName = currentUserProfile ? (currentUserProfile.displayName || '') : '';
-            const targetDescription = currentUserProfile ? (currentUserProfile.description || '') : '';
-            const targetBirthYear = currentUserProfile ? (currentUserProfile.birthYear || '') : '';
-            const targetPic = currentUserProfile ? (currentUserProfile.profilePic || 'https://www.w3schools.com/howto/img_avatar.png') : 'https://www.w3schools.com/howto/img_avatar.png';
+            // FIXED DOUBLE-TAP STUTTER GLITCH: Safe initialization assignments preventing transition loop interruptions
+            const activeSidebar = document.getElementById('profile-settings-sidebar');
+            if (activeSidebar.classList.contains('active')) {
+                return;
+            }
 
-            document.getElementById('settings-display-name').value = targetDisplayName;
-            document.getElementById('settings-description').value = targetDescription;
-            document.getElementById('settings-birth-year').value = targetBirthYear;
+            // Restore from Sidebar Temporary volatile draft cache memory if valid
+            if (sidebarDraftMemoryCache.cachedTimestampString && (sidebarDraftMemoryCache.displayName !== null || sidebarDraftMemoryCache.description !== null || sidebarDraftMemoryCache.birthYear !== null)) {
+                document.getElementById('settings-display-name').value = sidebarDraftMemoryCache.displayName || '';
+                document.getElementById('settings-description').value = sidebarDraftMemoryCache.description || '';
+                document.getElementById('settings-birth-year').value = sidebarDraftMemoryCache.birthYear || '';
+                
+                const bannerContainer = document.getElementById('sidebar-draft-banner-target');
+                bannerContainer.className = "draft-notice-banner";
+                bannerContainer.innerText = `Save this or discard, you wrote this at ${sidebarDraftMemoryCache.cachedTimestampString}`;
+            } else {
+                const targetDisplayName = currentUserProfile ? (currentUserProfile.displayName || '') : '';
+                const targetDescription = currentUserProfile ? (currentUserProfile.description || '') : '';
+                const targetBirthYear = currentUserProfile ? (currentUserProfile.birthYear || '') : '';
+
+                document.getElementById('settings-display-name').value = targetDisplayName;
+                document.getElementById('settings-description').value = targetDescription;
+                document.getElementById('settings-birth-year').value = targetBirthYear;
+                document.getElementById('sidebar-draft-banner-target').className = "hidden";
+            }
+
+            const targetPic = currentUserProfile ? (currentUserProfile.profilePic || 'https://www.w3schools.com/howto/img_avatar.png') : 'https://www.w3schools.com/howto/img_avatar.png';
             document.getElementById('settings-pfp-view').src = targetPic;
             settingsUploadedPfpUrl = currentUserProfile ? (currentUserProfile.profilePic || '') : '';
             
-            document.getElementById('profile-settings-sidebar').classList.add('active');
+            activeSidebar.classList.add('active');
             document.getElementById('drawer-overlay').classList.add('active');
             updateRealtimeTelemetryActivity();
         };
@@ -654,16 +794,43 @@
         };
 
         window.triggerAIPresetResponse = (index) => {
-            const outputBubble = document.getElementById('ai-response-output-bubble');
-            outputBubble.classList.remove('hidden');
-            outputBubble.innerText = aiHelperPresets[index] || "Processing exception execution array reference match index anomaly.";
+            const interactionArea = document.getElementById('ai-drawer-dynamic-interaction-workspace');
+            const cachedExistingContent = interactionArea.innerHTML;
+            
+            // Sequential 5-Second Thinking Stage Automation Arrays Mapping
+            interactionArea.innerHTML = `
+                <div class="thinking-container fade-in">
+                    <div class="thinking-spinner"></div>
+                    <div class="thinking-status-text" id="ai-thinking-text-mutate-hook">Thinking...</div>
+                </div>
+            `;
+
+            setTimeout(() => {
+                const labelHook = document.getElementById('ai-thinking-text-mutate-hook');
+                if (labelHook) labelHook.innerText = "Encoding";
+            }, 1500);
+
+            setTimeout(() => {
+                const labelHook = document.getElementById('ai-thinking-text-mutate-hook');
+                if (labelHook) labelHook.innerText = "Formatting";
+            }, 3200);
+
+            setTimeout(() => {
+                // Restore and render result payload parameters
+                interactionArea.innerHTML = cachedExistingContent;
+                const outputBubble = document.getElementById('ai-response-output-bubble');
+                outputBubble.classList.remove('hidden');
+                outputBubble.innerText = aiHelperPresets[index] || "Processing exception execution array reference match index anomaly.";
+            }, 5000);
         };
 
         window.handleDarkThemeToggle = (isChecked) => {
             if (isChecked) {
                 document.body.classList.add('dark-theme');
+                localStorage.setItem('fluxionary_theme_pref', 'dark');
             } else {
                 document.body.classList.remove('dark-theme');
+                localStorage.setItem('fluxionary_theme_pref', 'light');
             }
         };
 
@@ -671,8 +838,10 @@
             const btn = document.getElementById('sidebar-ai-helper-btn');
             if (isChecked) {
                 btn.classList.remove('hidden');
+                localStorage.setItem('fluxionary_ai_helper_pref', 'enabled');
             } else {
                 btn.classList.add('hidden');
+                localStorage.setItem('fluxionary_ai_helper_pref', 'disabled');
             }
         };
 
@@ -783,6 +952,31 @@
             }
         };
 
+        // Initialization Logic for Localized Preference Recovery (Dark/White Mode & AI helper checks)
+        function applyPersistentUserLocalStorageConfigurationPreferences() {
+            const themePref = localStorage.getItem('fluxionary_theme_pref');
+            if (themePref === 'dark') {
+                document.body.classList.add('dark-theme');
+                document.getElementById('settings-darkmode-toggle').checked = true;
+            } else {
+                document.body.classList.remove('dark-theme');
+                document.getElementById('settings-darkmode-toggle').checked = false;
+            }
+
+            const aiPref = localStorage.getItem('fluxionary_ai_helper_pref');
+            const aiBtn = document.getElementById('sidebar-ai-helper-btn');
+            if (aiPref === 'disabled') {
+                aiBtn.classList.add('hidden');
+                document.getElementById('settings-aihelper-toggle').checked = false;
+            } else {
+                aiBtn.classList.remove('hidden');
+                document.getElementById('settings-aihelper-toggle').checked = true;
+            }
+        }
+
+        // Trigger Configuration Bindings Immediately upon parsing compilation lifecycle
+        applyPersistentUserLocalStorageConfigurationPreferences();
+
         // Track and Synchronize User Session State
         onAuthStateChanged(auth, (user) => {
             if (user) {
@@ -881,10 +1075,10 @@
                         document.getElementById('kids-restriction-screen').classList.add('hidden');
                     } else {
                         document.getElementById('mandatory-profile-drawer').classList.remove('active');
-                        document.getElementById('profile-settings-sidebar').classList.remove('active');
-                        document.getElementById('drawer-overlay').classList.remove('active');
-                        document.getElementById('kids-restriction-screen').classList.add('hidden');
                         
+                        // Clear the caching parameters validation states once matched accurately with database sync runs
+                        sidebarDraftMemoryCache = { displayName: null, description: null, birthYear: null, cachedTimestampString: null };
+
                         // Populate and configure operational interface elements
                         document.getElementById('nav-user').classList.remove('hidden');
                         document.getElementById('top-user-name').innerText = profile.displayName || user.email;
@@ -923,6 +1117,12 @@
 
             if(!dName || !desc || !bYear) {
                 showToast("All fields are mandatory to complete initialization", "error");
+                return;
+            }
+
+            // CRITICAL INPUT CONSTRAINT ENFORCEMENT: Enforce exactly 3 to 10 character boundaries for display names
+            if (dName.length < 3 || dName.length > 10) {
+                showToast("Display name parameter constraints must strictly contain between 3 and 10 characters.", "error");
                 return;
             }
 
@@ -975,8 +1175,14 @@
                 demeritPoints: preExistingPoints
             });
 
+            // Wipe cache memory out cleanly on commit
+            sidebarDraftMemoryCache = { displayName: null, description: null, birthYear: null, cachedTimestampString: null };
+            document.getElementById('sidebar-draft-banner-target').className = "hidden";
+
             showToast("Profile identity metadata synced successfully");
-            // Allow programmatic dismissal of viewports since user profile completion requirements are successfully passed
+            
+            // FIXED SIDEBAR CLOSURE BARRIER: Ensure drawers are correctly cleared post synchronization run
+            document.getElementById('profile-settings-sidebar').classList.remove('active');
             document.getElementById('mandatory-profile-drawer').classList.remove('active');
             document.getElementById('drawer-overlay').classList.remove('active');
             updateRealtimeTelemetryActivity();
