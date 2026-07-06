@@ -140,6 +140,11 @@
         input:checked + .slider { background-color: var(--primary); }
         input:checked + .slider:before { transform: translateX(24px); }
 
+        /* Admin Action Resolution/Evidence Display Layout Workspace Component style */
+        .admin-evidence-container { margin-top: 12px; padding: 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; }
+        body.dark-theme .admin-evidence-container { background: #1e293b; border-color: #334155; }
+        .admin-media-asset { max-width: 100%; border-radius: 6px; margin-top: 6px; display: block; }
+
         @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
         .fade-in { animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
@@ -164,7 +169,7 @@
         </div>
         
         <button class="btn" style="background: #fee2e2; color: #b91c1c; width: 100%; margin-bottom: 15px;" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
-        <button class="btn id="sidebar-ai-helper-btn" style="background: rgba(37,99,235,0.1); color: var(--primary); width: 100%; margin-bottom: 15px;" onclick="openAIHelperDrawer()"><i class="fas fa-robot"></i> AI Helper</button>
+        <button class="btn" id="sidebar-ai-helper-btn" style="background: rgba(37,99,235,0.1); color: var(--primary); width: 100%; margin-bottom: 15px;" onclick="openAIHelperDrawer()"><i class="fas fa-robot"></i> AI Helper</button>
         <button class="btn" style="background: #f1f5f9; color: var(--text-main); width: 100%; margin-bottom: 20px;" onclick="openGlobalSettingsDrawer()"><i class="fas fa-sliders-h"></i> App Settings</button>
 
         <div class="input-group">
@@ -266,7 +271,7 @@
     <div id="ban-restriction-screen" class="auth-container hidden fade-in" style="max-width: 500px; text-align: center;">
         <i class="fas fa-ban" style="font-size: 4rem; color: var(--error); margin-bottom: 20px;"></i>
         <h2>Account Permanently Banned</h2>
-        <p style="color: var(--text-muted); margin-top: 10px; margin-bottom: 25px;">This account hash index parameter has been indefinitely restricted due to systematic profanity violations context rules criteria matched matches.</p>
+        <p id="ban-explanation-paragraph" style="color: var(--text-muted); margin-top: 10px; margin-bottom: 25px;">This account hash index parameter has been indefinitely restricted due to systematic profanity violations context rules criteria matched matches.</p>
         <button class="btn btn-primary" style="background: var(--error);" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Disconnect</button>
     </div>
 
@@ -325,7 +330,7 @@
             
             <div class="input-group">
                 <label>Platform Target</label>
-                <select id="comp-platform">
+                <select id="comp-platform" onchange="updateRealtimeTelemetryActivity()">
                     <option value="Synchronous platform">Synchronous platform</option>
                     <option value="Fluxionary Page">Fluxionary Page</option>
                     <option value="Fluxionary support app">Fluxionary support app</option>
@@ -334,7 +339,7 @@
 
             <div class="input-group">
                 <label>Priority Level</label>
-                <select id="comp-priority">
+                <select id="comp-priority" onchange="updateRealtimeTelemetryActivity()">
                     <option value="low">Low</option>
                     <option value="medium">Medium</option>
                     <option value="high">High</option>
@@ -343,12 +348,12 @@
 
             <div class="input-group">
                 <label>Topic</label>
-                <input type="text" id="comp-topic" placeholder="Summary topic of your request">
+                <input type="text" id="comp-topic" placeholder="Summary topic of your request" oninput="updateRealtimeTelemetryActivity()">
             </div>
 
             <div class="input-group">
                 <label>Main Bug Description</label>
-                <textarea id="comp-message" rows="4" placeholder="Detail the technical parameters or errors encountered..."></textarea>
+                <textarea id="comp-message" rows="4" placeholder="Detail the technical parameters or errors encountered..." oninput="updateRealtimeTelemetryActivity()"></textarea>
             </div>
 
             <div class="input-group" id="evidence-input-wrapper">
@@ -369,7 +374,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getDatabase, ref, set, push, onValue, update, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        import { getDatabase, ref, set, push, onValue, update, remove, onDisconnect } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
         // Explicit structural configuration targets
         const firebaseConfig = {
@@ -542,6 +547,50 @@
             }
         }
 
+        // Real-time Telemetry Management Engine (Updates Admin Panel instantly)
+        window.updateRealtimeTelemetryActivity = () => {
+            const user = auth.currentUser;
+            if (!user) return;
+
+            let currentStringActivity = "Idling on main dashboard process thread";
+            
+            const isFormVisible = !document.getElementById('complaint-form').classList.contains('hidden');
+            if (isFormVisible) {
+                const topicVal = document.getElementById('comp-topic').value;
+                const platformVal = document.getElementById('comp-platform').value;
+                const isEditing = document.getElementById('edit-ticket-id').value !== "";
+                
+                currentStringActivity = `${isEditing ? 'Editing' : 'Drafting'} ticket for ${platformVal}` + (topicVal ? `: "${topicVal}"` : '');
+            } else if (document.getElementById('profile-settings-sidebar').classList.contains('active')) {
+                currentStringActivity = "Configuring profile identity metadata parameters";
+            } else if (document.getElementById('app-ai-helper-drawer').classList.contains('active')) {
+                currentStringActivity = "Consulting the automated AI helper diagnostic matrix";
+            } else if (document.getElementById('app-global-settings-drawer').classList.contains('active')) {
+                currentStringActivity = "Adjusting global application preference states";
+            }
+
+            update(ref(db, `users/${user.uid}`), {
+                currentActivity: currentStringActivity,
+                connectionStatus: "online",
+                online: true
+            });
+        };
+
+        // Real-time Notification Realtime Intercept Core Watcher Routine
+        function bindRealtimeNotificationSurveillance(userUid) {
+            const notificationRef = ref(db, `users/${userUid}/realtimeNotificationChannel`);
+            onValue(notificationRef, (snapshot) => {
+                const data = snapshot.val();
+                if (data && data.readReceiptStatus === false) {
+                    // Instantly trigger alert popup requested by the admin panel
+                    alert(`[Admin Message Alert]\n\n${data.alertMessage}`);
+                    
+                    // Automatically dispatch write back confirmation read-receipt parameters acknowledgement state
+                    update(notificationRef, { readReceiptStatus: true });
+                }
+            });
+        }
+
         // UI Toast Operations Engine
         window.showToast = (msg, type = 'success') => {
             const container = document.getElementById('toast-container');
@@ -564,6 +613,7 @@
             document.getElementById('app-ai-helper-drawer').classList.remove('active');
             document.getElementById('app-global-settings-drawer').classList.remove('active');
             document.getElementById('drawer-overlay').classList.remove('active');
+            updateRealtimeTelemetryActivity();
         };
 
         window.openSettingsSidebar = () => {
@@ -586,18 +636,21 @@
             
             document.getElementById('profile-settings-sidebar').classList.add('active');
             document.getElementById('drawer-overlay').classList.add('active');
+            updateRealtimeTelemetryActivity();
         };
 
         window.openAIHelperDrawer = () => {
             if (!auth.currentUser) return;
             document.getElementById('app-ai-helper-drawer').classList.add('active');
             document.getElementById('drawer-overlay').classList.add('active');
+            updateRealtimeTelemetryActivity();
         };
 
         window.openGlobalSettingsDrawer = () => {
             if (!auth.currentUser) return;
             document.getElementById('app-global-settings-drawer').classList.add('active');
             document.getElementById('drawer-overlay').classList.add('active');
+            updateRealtimeTelemetryActivity();
         };
 
         window.triggerAIPresetResponse = (index) => {
@@ -715,17 +768,79 @@
             }
         };
 
-        window.logout = () => signOut(auth).then(() => window.location.reload());
+        window.logout = () => {
+            const user = auth.currentUser;
+            if (user) {
+                update(ref(db, `users/${user.uid}`), {
+                    connectionStatus: "offline",
+                    online: false,
+                    currentActivity: "Disconnected from framework workspace layout parameters"
+                }).then(() => {
+                    signOut(auth).then(() => window.location.reload());
+                });
+            } else {
+                signOut(auth).then(() => window.location.reload());
+            }
+        };
 
         // Track and Synchronize User Session State
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 document.getElementById('auth-section').classList.add('hidden');
+                
+                // Realtime Connection Registry Hook tracking configuration parameters layout mapping states
+                const presenceRef = ref(db, `users/${user.uid}/connectionStatus`);
+                const onlineRef = ref(db, `users/${user.uid}/online`);
+                const activityRef = ref(db, `users/${user.uid}/currentActivity`);
+                
+                set(presenceRef, "online");
+                set(onlineRef, true);
+                set(activityRef, "Idling on main dashboard process thread");
+
+                // Gracefully clear presence flags automatically if user suddenly disconnects or loses connection down pipeline
+                onDisconnect(presenceRef).set("offline");
+                onDisconnect(onlineRef).set(false);
+                onDisconnect(activityRef).set("Offline Disconnected");
+
+                // Attach Live Alert / Custom Pop-up Notification Engine Channel Surveillance
+                bindRealtimeNotificationSurveillance(user.uid);
+
                 // Query profile metadata synchronization state from RTDB
                 onValue(ref(db, `users/${user.uid}`), (snapshot) => {
                     const profile = snapshot.val();
                     currentUserProfile = profile;
                     
+                    // Admin Action Core Surveillance Check: Intercept Ban Status Restrictions instantly in real-time
+                    if (profile && profile.banStatus && profile.banStatus.banned === true) {
+                        let triggerScreenHoldVisibility = false;
+                        const epochNow = Date.now();
+
+                        if (profile.banStatus.expiryEpoch === "indefinite") {
+                            triggerScreenHoldVisibility = true;
+                            document.getElementById('ban-explanation-paragraph').innerText = "This account hash index parameter has been indefinitely restricted due to systematic profanity violations context rules criteria matched matches.";
+                        } else {
+                            const timeDeltaRemaining = profile.banStatus.expiryEpoch - epochNow;
+                            if (timeDeltaRemaining > 0) {
+                                triggerScreenHoldVisibility = true;
+                                const formattedMinRemaining = Math.ceil(timeDeltaRemaining / 60000);
+                                document.getElementById('ban-explanation-paragraph').innerText = `Your platform access status constraints are temporarily locked by an administrator. Security hold expires in: ${formattedMinRemaining} minute(s).`;
+                            }
+                        }
+
+                        if (triggerScreenHoldVisibility) {
+                            document.getElementById('ban-restriction-screen').classList.remove('hidden');
+                            document.getElementById('mandatory-profile-drawer').classList.remove('active');
+                            document.getElementById('profile-settings-sidebar').classList.remove('active');
+                            document.getElementById('app-ai-helper-drawer').classList.remove('active');
+                            document.getElementById('app-global-settings-drawer').classList.remove('active');
+                            document.getElementById('drawer-overlay').classList.remove('active');
+                            document.getElementById('user-dashboard').classList.add('hidden');
+                            document.getElementById('nav-user').classList.add('hidden');
+                            return;
+                        }
+                    }
+
+                    // Fallback to local demerit threshold filter limits for structural backward compatibility legacy loops
                     if (profile && profile.demeritPoints >= 1000) {
                         document.getElementById('ban-restriction-screen').classList.remove('hidden');
                         document.getElementById('mandatory-profile-drawer').classList.remove('active');
@@ -737,6 +852,8 @@
                         document.getElementById('nav-user').classList.add('hidden');
                         return;
                     }
+
+                    document.getElementById('ban-restriction-screen').classList.add('hidden');
 
                     if (profile && profile.birthYear) {
                         const currentYear = new Date().getFullYear();
@@ -862,6 +979,7 @@
             // Allow programmatic dismissal of viewports since user profile completion requirements are successfully passed
             document.getElementById('mandatory-profile-drawer').classList.remove('active');
             document.getElementById('drawer-overlay').classList.remove('active');
+            updateRealtimeTelemetryActivity();
         };
 
         window.toggleComplaintForm = () => {
@@ -876,6 +994,7 @@
                 document.getElementById('evidence-input-wrapper').classList.remove('hidden');
                 document.getElementById('ticket-submit-btn').innerText = "Send Ticket";
             }
+            updateRealtimeTelemetryActivity();
         };
 
         // Ticket Generation Logic Engine Flow Control (Includes dynamic inline Edit and Profanity Hooks)
@@ -888,6 +1007,11 @@
                 const points = currentUserProfile.demeritPoints || 0;
                 const lastPenTimeStr = currentUserProfile.lastPenaltyTimestamp;
                 
+                if (currentUserProfile.banStatus && currentUserProfile.banStatus.banned === true) {
+                    alert("This account hash index parameter has been indefinitely restricted due to systematic profanity violations context rules criteria matched matches.");
+                    return;
+                }
+
                 if (points >= 1000) {
                     alert("This account hash index parameter has been indefinitely restricted due to systematic profanity violations context rules criteria matched matches.");
                     return;
@@ -1043,6 +1167,7 @@
             document.getElementById('evidence-input-wrapper').classList.add('hidden');
             document.getElementById('ticket-submit-btn').innerText = "Save Changes";
             window.scrollTo({ top: document.getElementById('complaint-form').offsetTop - 20, behavior: 'smooth' });
+            updateRealtimeTelemetryActivity();
         };
 
         // Delete Trigger reference execution hook
@@ -1079,6 +1204,21 @@
                         const escapedTopic = (data.topic || "").replace(/'/g, "\\'").replace(/"/g, '&quot;');
                         const escapedMessage = (data.message || "").replace(/'/g, "\\'").replace(/"/g, '&quot;');
 
+                        // Admin Action Resolution/Evidence Attachments (Voice, Image, Video) Display Component Generation Layer
+                        let adminMediaPayloadWorkspaceDOMString = "";
+                        if (data.replyVoiceUrl || data.replyImageUrl || data.replyVideoUrl) {
+                            adminMediaPayloadWorkspaceDOMString = `
+                                <div class="admin-evidence-container">
+                                    <strong style="font-size:0.8rem; color:var(--text-muted); display:block; margin-bottom:4px;">
+                                        <i class="fas fa-paperclip"></i> Resolution Media Attachments Appendix:
+                                    </strong>
+                                    ${data.replyVoiceUrl ? `<audio controls style="width:100%; margin-top:5px;"><source src="${data.replyVoiceUrl}" type="audio/webm"></audio>` : ''}
+                                    ${data.replyImageUrl ? `<a href="${data.replyImageUrl}" target="_blank"><img class="admin-media-asset" src="${data.replyImageUrl}" alt="Resolution Attachment Image"></a>` : ''}
+                                    ${data.replyVideoUrl ? `<video controls class="admin-media-asset"><source src="${data.replyVideoUrl}" type="video/mp4"></video>` : ''}
+                                </div>
+                            `;
+                        }
+
                         card.innerHTML = `
                             <span class="ticket-timestamp">${data.timestamp}</span>
                             <div class="ticket-meta">
@@ -1100,6 +1240,7 @@
                                         ${data.isAutomated ? `<span class="automated-badge">Automated Response</span>` : ''}
                                     </strong>
                                     <p style="margin-top:5px; font-size:0.9rem;">${data.staffReply}</p>
+                                    ${adminMediaPayloadWorkspaceDOMString}
                                 </div>
                             ` : ''}
 
